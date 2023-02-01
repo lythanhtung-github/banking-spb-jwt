@@ -1,0 +1,46 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<th:block th:fragment="modalWithdraw">
+    <div class="modal fade" id="modalWithdraw" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+         aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Withdraw</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-alert-danger hide"></div>
+                    <form id="frmWithdraw">
+                        <div class="row">
+                            <div class="col-lg-6 mt-3">
+                                <label for="customerIdWithdraw">Customer Id</label>
+                                <input type="text" class="form-control" id="customerIdWithdraw">
+                            </div>
+                            <div class="col-lg-6 mt-3">
+                                <label for="fullNameWithdraw">Full name</label>
+                                <input type="text" class="form-control" id="fullNameWithdraw" readonly>
+                            </div>
+                            <div class="col-lg-6 mt-3">
+                                <label for="balanceWithdraw">Current balance ($)</label>
+                                <input type="text" class="form-control" id="balanceWithdraw" readonly>
+                            </div>
+                            <div class="col-lg-6 mt-3">
+                                <label for="transactionAmountWithdraw">Transaction Amount (VNĐ)</label>
+                                <input type="text" class="form-control" id="transactionAmountWithdraw"
+                                       name="transactionAmountWithdraw">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-outline-warning" id="btnWithdraw">
+                        <i class="fa-regular fa-square-minus"></i>
+                        Withdraw
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>

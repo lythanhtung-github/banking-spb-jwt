@@ -1,0 +1,113 @@
+    <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <th:block th:replace="layout/head :: head"/>
+    <link rel="stylesheet" href="/assets/css/login-style.css">
+    <title>Đăng nhập</title>
+</head>
+
+<body>
+<div class="login-card-container">
+    <div class="login-card">
+        <div class="login-card-logo">
+            <img src="https://d1whtlypfis84e.cloudfront.net/guides/wp-content/uploads/2018/12/18132011/ebnkg2-1024x1024.png"
+                 alt="logo">
+        </div>
+        <div class="login-card-header">
+            <h1>Đăng nhập</h1>
+            <div>Vui lòng đăng nhập để sử dụng</div>
+        </div>
+        <form id="frmLogin" class="login-card-form">
+            <div class="form-item">
+                <span class="form-item-icon"><i class="fa-solid fa-user-pen"></i></span>
+                <input id="emailLogin" name="emailLogin" type="email" placeholder="Nhập email" required autofocus>
+            </div>
+            <div class="form-item">
+                <span class="form-item-icon"><i class="fa-solid fa-key"></i></span>
+                <input id = "passwordLogin" name = "passwordLogin" type="password" placeholder="Nhập mật khẩu" required>
+                <span class="show-password" onclick="showPassword1()"><i class="fa-solid fa-eye"></i></span>
+            </div>
+            <div class="form-item-other">
+                <div class="checkbox">
+                    <input type="checkbox" id="rememberMeCheckBox">
+                    <label for="rememberMeCheckBox">Nhớ tài khoản</label>
+                </div>
+                <a href="#">Quên mật khẩu</a>
+            </div>
+            <button id = "btnLogin" type="button">Đăng nhập</button>
+        </form>
+        <div class="login-card-footer">
+            Bạn chưa có tài khoản? <a href="/register">Tạo tài khoản mới</a>.
+        </div>
+    </div>
+</div>
+</body>
+<th:block th:replace="layout/script :: script"/>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/login-script.js"></script>
+<script>
+    const page = {
+        urls: {
+            login: App.AUTH_URL + "/login",
+        },
+        elements: {},
+        commands: {},
+        initializeEventControl: {}
+    }
+
+    page.elements.frmLogin = $("#frmLogin");
+    page.elements.emailLogin = $("#emailLogin");
+    page.elements.passwordLogin = $("#passwordLogin");
+    page.elements.btnLogin = $("#btnLogin");
+
+    page.commands.login = () => {
+        let user = {
+            username: page.elements.emailLogin.val(),
+            password: page.elements.passwordLogin.val()
+        }
+        $.ajax({
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            type: "POST",
+            url: page.urls.login,
+            data: JSON.stringify(user)
+        }).done((resp) => {
+            App.SweetAlert.redirectPage("Đăng nhập thành công.","<b></b>",1000, "/");
+
+            // setTimeout(function () {
+            //     window.location.href = "/";
+            // }, 1000);
+
+        }).fail(function (jqXHR) {
+            if (jqXHR.responseJSON) {
+                if (jqXHR.responseJSON.message) {
+                    App.IziToast.showErrorAlertLeft(jqXHR.responseJSON.message);
+                } else {
+                    $.each(jqXHR.responseJSON, function (key, value) {
+                        App.IziToast.showErrorAlertLeft(value);
+                    });
+                }
+            } else {
+                App.IziToast.showErrorAlertLeft("Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại!");
+            }
+        });
+    }
+
+    page.commands.loadData = () => {
+    }
+
+    page.initializeEventControl = () => {
+        page.elements.btnLogin.on("click", () => {
+            page.commands.login();
+        })
+    }
+
+    $(() => {
+        page.commands.loadData();
+        page.initializeEventControl();
+    });
+</script>
+</html>

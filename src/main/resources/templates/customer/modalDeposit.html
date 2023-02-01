@@ -1,0 +1,48 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<th:block th:fragment="modalDeposit">
+    <div class="modal fade" id="modalDeposit" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+         aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Deposit</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-alert-danger hide"></div>
+                    <form id="frmDeposit">
+                        <div class="row">
+                            <div class="col-lg-6 mt-3">
+                                <label for="customerIdDeposit">Customer Id</label>
+                                <input type="text" class="form-control" id="customerIdDeposit">
+                            </div>
+                            <div class="col-lg-6 mt-3">
+                                <label for="fullNameDeposit">Full name</label>
+                                <input type="text" class="form-control" id="fullNameDeposit" name="fullNameDeposit"
+                                       readonly>
+                            </div>
+                            <div class="col-lg-6 mt-3">
+                                <label for="balanceDeposit">Current balance (VNĐ)</label>
+                                <input type="text" class="form-control" id="balanceDeposit" name="balanceDeposit"
+                                       readonly>
+                            </div>
+                            <div class="col-lg-6 mt-3">
+                                <label for="transactionAmountDeposit">Transaction Amount (VNĐ)</label>
+                                <input type="text" class="form-control" id="transactionAmountDeposit"
+                                       name="transactionAmountDeposit">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-outline-success" id="btnDeposit">
+                        <i class="fa-regular fa-square-plus"></i>
+                        Deposit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>

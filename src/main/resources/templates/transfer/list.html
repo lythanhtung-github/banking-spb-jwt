@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+    <th:block th:replace="layout/head :: head"/>
+    <title>BANKING - AJAX</title>
+</head>
+
+<body>
+<div class="container-fluid">
+    <header>
+        <div class="row col-sm-12">
+            <div class="col-sm-6">
+                <h1>Transfer History</h1>
+            </div>
+            <div class="col-sm-6">
+                <a class="btn btn-outline-light" href="/customers">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    List of customers
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="content">
+        <table id="tbTransfer" class="table table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">#</th>
+                <th class="text-center">Created At</th>
+                <th class="text-center">Sender ID</th>
+                <th class="text-center">Sender Name</th>
+                <th class="text-center">Recipient ID</th>
+                <th class="text-center">Recipient Name</th>
+                <th class="text-center">Transfer Amount (VNĐ)</th>
+                <th class="text-center">Fees (%)</th>
+                <th class="text-center">Fees Amount (VNĐ)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Dữ liệu đổ vào -->
+            </tbody>
+            <tfoot>
+            <tr>
+                <td colspan="7" class="text-end fst-italic font-weight-bold">Total Fees Amount:</td>
+                <td colspan="2" class="text-start font-monospace" style="font-size: 24px">
+                    <span id="sumFeesAmount">
+                    </span>
+                </td>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+</body>
+<th:block th:replace="layout/script :: script"/>
+<script src="/assets/js/app.js"></script>
+<script>
+    const page = {
+        urls: {
+            getAllTransfers: App.TRANSFER_API,
+            getAllTransfersHistory: App.TRANSFER_API + "/get-all-histories",
+            getSumFeesAmount: App.TRANSFER_API + "/get-sum-fees-amount",
+            getAllHistoriesWithSumFeesAmount: App.TRANSFER_API + "/get-all-histories-with-sum-fees-amount",
+        },
+        elements: {},
+        loadData: {},
+        commands: {},
+        dialogs: {
+            elements: {},
+            loadData: {},
+            commands: {},
+            alertDanger: {}
+        },
+        initializeEventControl: {}
+    }
+
+    page.elements.tbTransfer = $("#tbTransfer");
+    page.elements.tbTransferBody = $("#tbTransfer tbody");
+    page.elements.sumFeesAmount = $("#sumFeesAmount");
+
+
+    // SHOW TRANSFERS //
+    page.commands.getAllTransferHistory = () => {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllTransfersHistory
+        })
+            .done((date) => {
+                date.map(item => {
+                    page.elements.tbTransferBody.append(App.renderRowTransferHistory(item));
+                })
+            })
+            .fail((jqXHR) => {
+                alert("Get all transfer histories error");
+            })
+    }
+
+    page.commands.getSumFeesAmount = () => {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getSumFeesAmount
+        })
+            .done((data) => {
+                page.elements.sumFeesAmount.html(`${new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(data)}`);
+            })
+            .fail((jqXHR) => {
+                alert("Get all transfer histories error");
+            })
+    }
+
+    page.commands.getAllTransferHistoryWithSumFeesAmount = () => {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllHistoriesWithSumFeesAmount
+        })
+            .done((data) => {
+                let transferHistories = data.transferHistories;
+                let sumFeesAmount = data.sumFeesAmount;
+
+                transferHistories.map(item => {
+                    page.elements.tbTransferBody.append(page.commands.renderRowTransferHistory(item));
+                });
+
+                page.elements.sumFeesAmount.html(`${new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(sumFeesAmount)}`);
+            })
+            .fail((jqXHR) => {
+                alert("Get all transfer histories error");
+            })
+    }
+
+    page.commands.renderRowTransferHistory = (obj) => {
+        return `
+            <tr id="tr_${obj.id}">
+                <td>${obj.id}</td>
+                <td>${new Intl.DateTimeFormat('en-GB').format(obj.createAt)}</td>
+                <td>${obj.senderId}</td>
+                <td>${obj.senderName}</td>
+                <td>${obj.recipientId}</td>
+                <td>${obj.recipientName}</td>
+                 <td class="text-end">
+                            ${new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(obj.transferAmount)}
+                    </td>
+                <td class="text-end num-space">${obj.fees}</td>
+              <td class="text-end num-space">
+           ${new Intl.NumberFormat("en-US", {
+            style: 'decimal'
+        }).format(obj.feesAmount)}
+            </tr>
+        `;
+    }
+
+    // END SHOW //
+
+
+    page.commands.loadData = () => {
+        page.commands.getAllTransferHistoryWithSumFeesAmount();
+    }
+
+    page.initializeEventControl = () => {
+
+    }
+
+    $(() => {
+        page.commands.loadData();
+        page.initializeEventControl();
+    });
+</script>
+</html>

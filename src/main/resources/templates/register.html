@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <th:block th:replace="layout/head :: head"/>
+    <link rel="stylesheet" href="/assets/css/login-style.css">
+    <title>Đăng ký</title>
+</head>
+
+<body>
+<div class="register-card-container">
+    <div class="register-card">
+        <div class="login-card-logo">
+            <img src="https://d1whtlypfis84e.cloudfront.net/guides/wp-content/uploads/2018/12/18132011/ebnkg2-1024x1024.png"
+                 alt="logo">
+        </div>
+        <div class="register-card-header">
+            <h1>Đăng ký</h1>
+        </div>
+        <form id="frmRegister" class="register-card-form">
+            <div class="form-item">
+                <span class="form-item-icon"><i class="fa-solid fa-face-rolling-eyes"></i></span>
+                <select id="roleSelectRegister" name="roleSelectRegister" class="form-select">
+                </select>
+            </div>
+            <div class="form-item">
+                <span class="form-item-icon"><i class="fa-solid fa-signature"></i></span>
+                <input id="fullNameRegister" name="fullNameRegister" type="text" placeholder="Nhập họ tên" autofocus>
+            </div>
+            <div class="form-item">
+                <span class="form-item-icon"><i class="fa-solid fa-user-pen"></i></span>
+                <input id="emailRegister" name="emailRegister" type="text" placeholder="Nhập email">
+            </div>
+
+            <div class="form-item">
+                <span class="form-item-icon"><i class="fa-solid fa-key"></i></span>
+                <input id="passwordRegister" name="passwordRegister" type="password" placeholder="Nhập mật khẩu">
+                <span class="show-password" onclick="showPassword2()"><i class="fa-solid fa-eye"></i></span>
+            </div>
+            <button id="btnRegister" type="button">Đăng ký</button>
+        </form>
+        <div class="register-card-footer">
+            Bạn đã có tài khoản? <a href="/login">Đăng nhập</a>.
+        </div>
+    </div>
+</div>
+</body>
+<th:block th:replace="layout/script :: script"/>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/login-script.js"></script>
+<script>
+    let page = {
+        urls: {
+            register: App.AUTH_URL + "/register",
+            getAllRoles: App.ROLE_API
+        },
+        elements: {},
+        commands: {}
+    }
+
+    page.elements.frmRegister = $("#frmRegister");
+    page.elements.fullNameRegister = $("#fullNameRegister");
+    page.elements.emailRegister = $("#emailRegister");
+    page.elements.passwordRegister = $("#passwordRegister");
+    page.elements.roleSelectRegister = $("#roleSelectRegister");
+    page.elements.btnRegister = $("#btnRegister");
+
+    page.commands.getAllRole = () => {
+        return $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllRoles
+        })
+            .done((data) => {
+
+                data.map(item => {
+                    let str = `<option value="${item.id}">${item.code}</option>`;
+                    page.elements.roleSelectRegister.append(str);
+                })
+            })
+            .fail((error) => {
+                console.log(error);
+            })
+    }
+
+    page.commands.register = () => {
+        let user = {
+            fullName : page.elements.fullNameRegister.val(),
+            username: page.elements.emailRegister.val(),
+            password: page.elements.passwordRegister.val(),
+            role: {
+                id: page.elements.roleSelectRegister.val(),
+                code: page.elements.roleSelectRegister.find("option:selected").text()
+            }
+        }
+
+        $.ajax({
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            type: "POST",
+            url: page.urls.register,
+            data: JSON.stringify(user)
+        }).done((resp) => {
+            App.IziToast.showSuccessAlertLeft("Đăng ký thành công");
+            App.IziToast.showSuccessAlertLeft("Đang chuyển sang trang đăng nhập");
+            page.elements.frmRegister[0].reset();
+            setTimeout(function () {
+                window.location.href = "/login";
+            }, 3000);
+        }).fail(function (jqXHR) {
+            if (jqXHR.responseJSON) {
+                if (jqXHR.responseJSON.message) {
+                    App.IziToast.showErrorAlertLeft(jqXHR.responseJSON.message);
+                } else {
+                    $.each(jqXHR.responseJSON, function (key, value) {
+                        App.IziToast.showErrorAlertLeft(value);
+                    });
+                }
+            } else {
+                App.IziToast.showErrorAlertLeft("Không thể tạo tài khoản, vui lòng kiểm tra lại");
+            }
+        });
+    }
+
+    page.commands.loadData = () => {
+        page.commands.getAllRole();
+    }
+
+    page.initializeEventControl = () => {
+        page.elements.btnRegister.on("click", () => {
+            page.commands.register();
+        })
+    }
+
+    $(() => {
+        page.commands.loadData();
+        page.initializeEventControl();
+    });
+</script>
+</html>

@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+    <th:block th:replace="layout/head :: head"/>
+    <link rel="stylesheet" href="/assets/css/preview-image.css">
+    <title>BANKING - AJAX</title>
+</head>
+
+<body>
+<div class="main-container">
+    <header>
+        <div class="row col-sm-12">
+            <div class="col-sm-5">
+                <h1>List of customers</h1>
+            </div>
+            <div class="col-sm-7">
+                <div class="dropdown">
+                    <img id="user-image" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
+                         src="/assets/image/logo-icon.png" alt="user-image">
+
+                    <div class="dropdown-menu" aria-labelledby="user-image">
+                        <a class="dropdown-item" href="#">
+                            <i class="fa-solid fa-user"></i> <span th:text="${user.getRole().getCode()}"
+                                                                   style="color: #000000"></span>
+                            <br>
+                            <span th:text="${user.fullName}" style="color: #b90434; font-weight: bold"></span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Cài đặt</a>
+                        <a class="dropdown-item" href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+                    </div>
+                </div>
+                <button id="btnShowCreateModal" class="btn btn-outline-light">
+                    <i class="fa-solid fa-square-plus"></i>
+                    Add new customer
+                </button>
+                <a id="showTransfers" href="/transfers" class="btn btn-outline-light">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Transfer histories
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="content">
+        <table id="tbCustomer" class="table table-hover">
+            <thead>
+            <tr>
+                <th class="text-center">#</th>
+                <th class="text-center">Image</th>
+                <th class="text-center">Full name</th>
+                <th class="text-center">Email</th>
+                <th class="text-center">Phone</th>
+                <th class="text-center">Balance</th>
+                <th class="text-center">Province</th>
+                <th class="text-center">District</th>
+                <th class="text-center">Ward</th>
+                <th class="text-center">Address</th>
+                <th colspan="5" class="text-center">Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Dữ liệu đổ vào -->
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="loader hide"></div>
+<!-- Modal Create Customer -->
+<th:block th:replace="customer/modalCreateCustomer :: modalCreateCustomer"/>
+
+<!-- Modal Update Customer -->
+<th:block th:replace="customer/modalUpdateCustomer :: modalUpdateCustomer"/>
+
+<!-- Modal Deposit -->
+<th:block th:replace="customer/modalDeposit :: modalDeposit"/>
+
+<!-- Modal Withdraw-->
+<th:block th:replace="customer/modalWithdraw :: modalWithdraw"/>
+
+<!-- Modal Transfer-->
+<th:block th:replace="customer/modalTransfer :: modalTransfer"/>
+
+</body>
+<th:block th:replace="layout/script :: script"/>
+<script src="/assets/js/app.js"></script>
+<script>
+    const page = {
+        urls: {
+            getAllCustomers: App.CUSTOMER_API,
+            getCustomerById: App.CUSTOMER_API,
+            createCustomer: App.CUSTOMER_API,
+            updateCustomer: App.CUSTOMER_API,
+            deleteCustomer: App.CUSTOMER_API + "/delete",
+            getAllRecipients: App.CUSTOMER_API + "/get-all-recipients-without-sender",
+            deposit: App.DEPOSIT_API,
+            withdraw: App.WITHDRAW_API,
+            transfer: App.TRANSFER_API,
+            getAllProvinces: App.PROVINCE_URL,
+            getAllDistrictsByProvinceId: App.PROVINCE_URL + "district/",
+            getAllWardsByDistrictId: App.PROVINCE_URL + "ward/",
+            error_403: App.ERROR_URL + "403",
+            transfer_url: App.TRANSFER_URL,
+            getCustomerAvatarById: App.CUSTOMER_AVATAR_URL
+        },
+        elements: {},
+        loadData: {},
+        commands: {},
+        dialogs: {
+            elements: {},
+            loadData: {},
+            commands: {},
+            alertDanger: {}
+        },
+        initializeEventControl: {}
+    }
+
+    page.elements.loader = $(".loader");
+
+    page.elements.btnShowCreateModal = $("#btnShowCreateModal");
+    page.elements.tbCustomer = $("#tbCustomer");
+    page.elements.tbCustomerBody = $("#tbCustomer tbody");
+
+    page.dialogs.elements.modalCreateCustomer = $("#modalCreateCustomer");
+    page.dialogs.elements.frmCreateCustomer = $("#frmCreateCustomer");
+    page.dialogs.elements.fullNameCre = $("#fullNameCre");
+    page.dialogs.elements.emailCre = $("#emailCre");
+    page.dialogs.elements.phoneCre = $("#phoneCre");
+    page.dialogs.elements.provinceCre = $("#provinceIdCre");
+    page.dialogs.elements.districtCre = $("#districtIdCre");
+    page.dialogs.elements.wardCre = $("#wardIdCre");
+    page.dialogs.elements.addressCre = $("#addressCre");
+
+    page.dialogs.elements.btnCreate = $("#btnCreate");
+
+    page.dialogs.elements.modalUpdateCustomer = $("#modalUpdateCustomer");
+    page.dialogs.elements.frmUpdateCustomer = $("#frmUpdateCustomer");
+    page.dialogs.elements.customerIdUp = $("#customerIdUp");
+    page.dialogs.elements.fullNameUp = $("#fullNameUp");
+    page.dialogs.elements.emailUp = $("#emailUp");
+    page.dialogs.elements.phoneUp = $("#phoneUp");
+    page.dialogs.elements.locationRegionIdUp = $("#locationRegionIdUp");
+    page.dialogs.elements.provinceUp = $("#provinceIdUp");
+    page.dialogs.elements.districtUp = $("#districtIdUp");
+    page.dialogs.elements.wardUp = $("#wardIdUp");
+    page.dialogs.elements.addressUp = $("#addressUp");
+    page.dialogs.elements.btnUpdate = $("#btnUpdate");
+
+    page.dialogs.elements.modalDeposit = $("#modalDeposit");
+    page.dialogs.elements.frmDeposit = $("#frmDeposit");
+    page.dialogs.elements.customerIdDeposit = $("#customerIdDeposit");
+    page.dialogs.elements.fullNameDeposit = $("#fullNameDeposit");
+    page.dialogs.elements.balanceDeposit = $("#balanceDeposit");
+    page.dialogs.elements.transactionAmountDeposit = $("#transactionAmountDeposit");
+    page.dialogs.elements.btnDeposit = $("#btnDeposit");
+
+    page.dialogs.elements.modalWithdraw = $("#modalWithdraw");
+    page.dialogs.elements.frmWithdraw = $("#frmWithdraw");
+    page.dialogs.elements.customerIdWithdraw = $("#customerIdWithdraw");
+    page.dialogs.elements.fullNameWithdraw = $("#fullNameWithdraw");
+    page.dialogs.elements.balanceWithdraw = $("#balanceWithdraw");
+    page.dialogs.elements.transactionAmountWithdraw = $("#transactionAmountWithdraw");
+    page.dialogs.elements.btnWithdraw = $("#btnWithdraw");
+
+    page.dialogs.elements.modalTransfer = $("#modalTransfer");
+    page.dialogs.elements.frmTransfer = $("#frmTransfer");
+    page.dialogs.elements.senderIdTransfer = $("#senderIdTransfer");
+    page.dialogs.elements.senderNameTransfer = $("#senderNameTransfer");
+    page.dialogs.elements.senderEmailTransfer = $("#senderEmailTransfer");
+    page.dialogs.elements.senderBalanceTransfer = $("#senderBalanceTransfer");
+    page.dialogs.elements.recipientIdTransfer = $("#recipientIdTransfer");
+    page.dialogs.elements.transferAmountTransfer = $("#transferAmountTransfer");
+    page.dialogs.elements.feesTransfer = $("#feesTransfer");
+    page.dialogs.elements.transactionAmountTransfer = $("#transactionAmountTransfer");
+    page.dialogs.elements.btnTransfer = $("#btnTransfer");
+
+    page.dialogs.alertDanger.modalCreateCustomer = $("#modalCreateCustomer .modal-body .modal-alert-danger");
+    page.dialogs.alertDanger.modalUpdateCustomer = $("#modalUpdateCustomer .modal-body .modal-alert-danger");
+    page.dialogs.alertDanger.modalDeposit = $("#modalDeposit .modal-body .modal-alert-danger");
+    page.dialogs.alertDanger.modalWithdraw = $("#modalWithdraw .modal-body .modal-alert-danger");
+    page.dialogs.alertDanger.modalTransfer = $("#modalTransfer .modal-body .modal-alert-danger");
+
+    page.dialogs.elements.showTransfers = $("#showTransfers");
+
+    page.dialogs.elements.wrapperCre = $("#frmCreateCustomer section .wrapper");
+    page.dialogs.elements.imageFileCre = $("#imageFileCre");
+    page.dialogs.elements.wrapperContentCre = $("#frmCreateCustomer section .wrapper .content");
+    page.dialogs.elements.imagePreviewCre = $("#frmCreateCustomer section .image-preview canvas");
+    page.dialogs.elements.canvasCre = $("#canvasCre");
+    page.dialogs.elements.contextCre = page.dialogs.elements.canvasCre[0].getContext('2d');
+    page.dialogs.elements.imagePreviewCre.css("display", "none");
+    page.dialogs.elements.divImagePreviewCre = $("#frmCreateCustomer div.image-preview,#frmCreateCustomer div.file-name");
+
+    page.dialogs.elements.wrapperUp = $("#frmUpdateCustomer section .wrapper");
+    page.dialogs.elements.imageFileUp = $("#imageFileUp");
+    page.dialogs.elements.wrapperContentUp = $("#frmUpdateCustomer section .wrapper .content");
+    page.dialogs.elements.imagePreviewUp = $("#frmUpdateCustomer section .image-preview canvas");
+    page.dialogs.elements.canvasUp = $("#canvasUp");
+    page.dialogs.elements.contextUp = page.dialogs.elements.canvasUp[0].getContext('2d');
+    page.dialogs.elements.imagePreviewUp.css("display", "none");
+    page.dialogs.elements.divImagePreviewUp = $("#frmUpdateCustomer div.image-preview, #frmUpdateCustomer div.file-name");
+
+    let customer = new Customer();
+    let locationRegion = new LocationRegion();
+    let deposit = new Deposit();
+    let withdraw = new Withdraw();
+    let transfer = new Transfer();
+    let customerAvatar = new CustomerAvatar();
+    let senderAvatar = new CustomerAvatar();
+    let recipientAvatar = new CustomerAvatar();
+
+    page.commands.getAllCustomers = () => {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllCustomers
+        })
+            .done((data) => {
+                $.each(data, (i, item) => {
+                    customerAvatar = item;
+                    customer = customerAvatar.customer;
+                    locationRegion = customer.locationRegion;
+                    page.elements.tbCustomerBody.prepend(page.commands.renderCustomer(customerAvatar, customer, locationRegion));
+                });
+
+                page.commands.enableTooltip();
+
+                page.commands.removeHandleShowModal();
+
+                page.commands.handleShowGroupModal();
+            })
+            .fail((error) => {
+                console.log(error);
+            })
+    }
+
+    page.commands.renderCustomer = (obj, customer, locationRegion) => {
+        let image_thumbnail = App.BASE_URL_CLOUD_IMAGE + "/" + App.SCALE_IMAGE_W100_H80_Q100 + "/" + obj.fileFolder + "/" + obj.fileName;
+        return `
+                <tr id="tr_${customer.id}">
+                    <td>${customer.id}</td>
+                    <td>
+                        <img src=${image_thumbnail} alt="${obj.id}">
+                    </td>
+                    <td>${customer.fullName}</td>
+                    <td>${customer.email}</td>
+                    <td>${customer.phone}</td>
+                    <td class="text-end">
+                            ${new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(customer.balance)}
+                    </td>
+                     <td>${locationRegion.provinceName}</td>
+                    <td>${locationRegion.districtName}</td>
+                    <td>${locationRegion.wardName}</td>
+                    <td>${locationRegion.address}</td>
+                    <td class="text-center">
+                        <button data-id="${customer.id}"
+                                data-avatar-id = "${obj.id}"
+                                data-avatar-file-folder = "${obj.fileFolder}"
+                                data-avatar-file-name = "${obj.fileName}"
+                                class="btn btn btn-outline-dark update"
+                                title="Edit"
+                                data-toggle="tooltip"
+                                data-bs-original-title="Edit"
+                                data-bs-placement="top"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalUpdateCustomer">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button data-id="${customer.id}"
+                                class="btn btn-outline-success deposit"
+                                title="Deposit"
+                                data-toggle="tooltip"
+                                data-bs-original-title="Edit"
+                                data-bs-placement="top">
+                                <i class="fa-regular fa-square-plus"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button data-id="${customer.id}"
+                                class="btn btn-outline-warning withdraw"
+                                title="Withdraw"
+                                data-toggle="tooltip"
+                                data-bs-original-title="Edit"
+                                data-bs-placement="top">
+                                <i class="fa-regular fa-square-minus"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button data-id="${customer.id}"
+                                class="btn btn-outline-info transfer"
+                                title="Transfer"
+                                data-toggle="tooltip"
+                                data-bs-original-title="Edit"
+                                data-bs-placement="top">
+                                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                        </button>
+                    </td>
+                    <td>
+                          <button data-id="${customer.id}"
+                                class="btn btn-outline-danger delete"
+                                title="Suspended"
+                                data-toggle="tooltip"
+                                data-bs-original-title="Edit"
+                                data-bs-placement="top">
+                                <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+    }
+    // END SHOW //
+
+    //-Load image Update-//
+    page.dialogs.commands.loadImageToCanvasUp = (imageFile, fileType, imageUrl) => {
+        page.dialogs.elements.imagePreviewUp.css("display", "");
+        page.dialogs.elements.wrapperUp.addClass("active");
+        page.dialogs.elements.wrapperContentUp.css("opacity", 0);
+
+        let imageObj = new Image();
+
+        imageObj.onload = function () {
+            page.dialogs.elements.contextUp.canvas.width = imageObj.width;
+            page.dialogs.elements.contextUp.canvas.height = imageObj.height;
+            page.dialogs.elements.contextUp.drawImage(imageObj, 0, 0, imageObj.width, imageObj.height);
+        };
+        if (fileType === "BINARY") {
+            imageObj.src = URL.createObjectURL(imageFile);
+        } else {
+            imageObj.src = imageUrl;
+        }
+    }
+
+    page.dialogs.commands.changeImagePreviewUp = () => {
+        let imageFile = page.dialogs.elements.imageFileUp[0].files[0];
+
+        if (imageFile) {
+            let reader = new FileReader();
+
+            reader.readAsDataURL(imageFile);
+
+            reader.onload = function (e) {
+                if (e.target.readyState === FileReader.DONE) {
+                    page.dialogs.commands.loadImageToCanvasUp(imageFile, "BINARY", null);
+                }
+            }
+        } else {
+            page.dialogs.elements.clearImagePreviewUp();
+        }
+    }
+
+    page.dialogs.elements.clearImagePreviewUp = () => {
+        page.dialogs.elements.imageFileUp.val("");
+        page.dialogs.elements.imagePreviewUp.css("display", "none");
+        page.dialogs.elements.wrapperUp.removeClass("active");
+        page.dialogs.elements.wrapperContentUp.css("opacity", 1);
+    }
+    //--//
+
+    //-Load image Create-//
+    page.dialogs.commands.loadImageToCanvasCre = (imageFile) => {
+        page.dialogs.elements.imagePreviewCre.css("display", "");
+        page.dialogs.elements.wrapperCre.addClass("active");
+        page.dialogs.elements.wrapperContentCre.css("opacity", 0);
+
+        let imageObj = new Image();
+
+        imageObj.onload = function () {
+            page.dialogs.elements.contextCre.canvas.width = imageObj.width;
+            page.dialogs.elements.contextCre.canvas.height = imageObj.height;
+            page.dialogs.elements.contextCre.drawImage(imageObj, 0, 0, imageObj.width, imageObj.height);
+        };
+
+        imageObj.src = URL.createObjectURL(imageFile)
+    }
+
+    page.dialogs.commands.changeImagePreviewCre = () => {
+        let imageFile = page.dialogs.elements.imageFileCre[0].files[0];
+
+        if (imageFile) {
+            let reader = new FileReader();
+
+            reader.readAsDataURL(imageFile);
+
+            reader.onload = function (e) {
+                if (e.target.readyState === FileReader.DONE) {
+                    page.dialogs.commands.loadImageToCanvasCre(imageFile);
+                }
+            }
+        } else {
+            page.dialogs.elements.clearImagePreviewCre();
+        }
+    }
+
+    page.dialogs.elements.clearImagePreviewCre = () => {
+        page.dialogs.elements.imageFileCre.val("");
+        page.dialogs.elements.imagePreviewCre.css("display", "none");
+        page.dialogs.elements.wrapperCre.removeClass("active");
+        page.dialogs.elements.wrapperContentCre.css("opacity", 1);
+    }
+
+    page.dialogs.elements.clearImagePreviewUp = () => {
+        page.dialogs.elements.imageFileUp.val("");
+        page.dialogs.elements.imagePreviewUp.css("display", "none");
+        page.dialogs.elements.wrapperUp.removeClass("active");
+        page.dialogs.elements.wrapperContentUp.css("opacity", 1);
+    }
+    //--//
+
+    //--------//
+    page.commands.getAllProvinces = () => {
+        return $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllProvinces
+        })
+            .done((data) => {
+                let results = data.results;
+
+                results.map(item => {
+                    let str = `<option value="${item.province_id}">${item.province_name}</option>`;
+                    page.dialogs.elements.provinceCre.append(str);
+                    page.dialogs.elements.provinceUp.append(str);
+                })
+
+            })
+            .fail((error) => {
+                console.log(error);
+                console.log("Không thể tải dữ liệu Tỉnh/Thành phố");
+            })
+    }
+
+    page.commands.getAllDistrictsByProvinceId = (provinceId) => {
+        return $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllDistrictsByProvinceId + provinceId
+        })
+            .done((data) => {
+
+                page.dialogs.elements.districtCre.empty();
+                page.dialogs.elements.districtUp.empty();
+
+                let results = data.results;
+
+                results.map(item => {
+                    let str = `<option value="${item.district_id}">${item.district_name}</option>`;
+                    page.dialogs.elements.districtCre.append(str);
+                    page.dialogs.elements.districtUp.append(str);
+                })
+            })
+            .fail((error) => {
+                console.log(error);
+                console.log("Không thể tải dữ liệu Thành phố/Quận/Huyện");
+            })
+    }
+
+    page.commands.getAllWardsByDistrictId = (districtId) => {
+        return $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllWardsByDistrictId + districtId
+        })
+            .done((data) => {
+                page.dialogs.elements.wardCre.empty();
+                page.dialogs.elements.wardUp.empty();
+
+                let results = data.results;
+
+                results.map(item => {
+                    let str = `<option value="${item.ward_id}">${item.ward_name}</option>`;
+                    page.dialogs.elements.wardCre.append(str);
+                    page.dialogs.elements.wardUp.append(str);
+                })
+            })
+            .fail((error) => {
+                console.log(error);
+                console.log("Không thể tải dữ liệu Phường/Xã/Thị trấn");
+            })
+    }
+
+    page.dialogs.elements.provinceCre.on("change", function () {
+        let provinceId = $(this).val();
+
+        page.commands.getAllDistrictsByProvinceId(provinceId).then(() => {
+            let districtId = page.dialogs.elements.districtCre.val();
+
+            page.commands.getAllWardsByDistrictId(districtId);
+        });
+
+    });
+
+    page.dialogs.elements.districtCre.on("change", function () {
+        let districtId = $(this).val();
+
+        page.commands.getAllWardsByDistrictId(districtId);
+    });
+
+    page.dialogs.elements.provinceUp.on("change", function () {
+        let provinceId = $(this).val();
+
+        page.commands.getAllDistrictsByProvinceId(provinceId).then(() => {
+            let districtId = page.dialogs.elements.districtUp.val();
+            page.commands.getAllWardsByDistrictId(districtId);
+        });
+    });
+
+    page.dialogs.elements.districtUp.on("change", function () {
+        let districtId = $(this).val();
+        page.commands.getAllWardsByDistrictId(districtId);
+    })
+
+    //--------//
+
+    //CREATE CUSTOMER//
+    page.commands.handleShowCreateModal = () => {
+        page.elements.btnShowCreateModal.on("click", () => {
+            page.dialogs.elements.modalCreateCustomer.modal("show");
+        })
+    }
+
+    page.dialogs.elements.btnCreate.on("click", () => {
+        page.dialogs.elements.frmCreateCustomer.trigger("submit");
+    })
+
+    page.dialogs.elements.frmCreateCustomer.validate({
+        rules: {
+            fullNameCre: {
+                required: true,
+                minlength: 5,
+                maxlength: 50
+            },
+            emailCre: {
+                required: true,
+                minlength: 5,
+                maxlength: 50,
+                email: true
+            },
+            phoneCre: {
+                // phone_valid: true,
+                required: true,
+            }
+        },
+        messages: {
+            fullNameCre: {
+                required: "Vui lòng nhập tên đầy đủ",
+                minlength: "Độ dài tối thiểu là 5 ký tự",
+                maxlength: "Độ dài tối đa là 100 ký tự"
+            },
+            emailCre: {
+                required: "Vui lòng nhập email đầy đủ",
+                minlength: "Độ dài tối thiểu là 5 ký tự",
+                maxlength: "Độ dài tối đa là 100 ký tự",
+                email: "Định dạng email không đúng"
+            },
+            phoneCre: {
+                // phone_valid: "Định dạng số điện thoại không đúng",
+                required: "Vui lòng nhập số điện thoại đầy đủ"
+            }
+        },
+        errorLabelContainer: "#modalCreateCustomer .modal-body .modal-alert-danger",
+        errorPlacement: function (error) {
+            error.appendTo("#modalCreateCustomer .modal-body .modal-alert-danger");
+        },
+        showErrors: function () {
+            if (this.numberOfInvalids() > 0) {
+                page.dialogs.alertDanger.modalCreateCustomer.removeClass("hide").addClass("show");
+            } else {
+                page.dialogs.alertDanger.modalCreateCustomer.removeClass("show").addClass("hide").empty();
+                $("#modalCreateCustomer input.error").removeClass("error");
+            }
+            this.defaultShowErrors();
+        },
+        submitHandler: function () {
+            locationRegion.provinceId = page.dialogs.elements.provinceCre.val();
+            locationRegion.provinceName = page.dialogs.elements.provinceCre.find("option:selected").text();
+            locationRegion.districtId = page.dialogs.elements.districtCre.val();
+            locationRegion.districtName = page.dialogs.elements.districtCre.find("option:selected").text();
+            locationRegion.wardId = page.dialogs.elements.wardCre.val();
+            locationRegion.wardName = page.dialogs.elements.wardCre.find("option:selected").text();
+            locationRegion.address = page.dialogs.elements.addressCre.val();
+
+            customer.fullName = page.dialogs.elements.fullNameCre.val();
+            customer.email = page.dialogs.elements.emailCre.val();
+            customer.phone = page.dialogs.elements.phoneCre.val();
+            customer.balance = 0;
+            customer.locationRegion = locationRegion;
+
+            let formData = new FormData();
+            formData.append("fullName", customer.fullName);
+            formData.append("email", customer.email);
+            formData.append("phone", customer.phone);
+            formData.append("balance", customer.balance);
+            formData.append("provinceId", locationRegion.provinceId);
+            formData.append("provinceName", locationRegion.provinceName);
+            formData.append("districtId", locationRegion.districtId);
+            formData.append("districtName", locationRegion.districtName);
+            formData.append("wardId", locationRegion.wardId);
+            formData.append("wardName", locationRegion.wardName);
+            formData.append("address", locationRegion.address);
+            formData.append("file", page.dialogs.elements.imageFileCre[0].files[0]);
+
+            page.commands.createCustomer(formData);
+        }
+    })
+
+    page.commands.createCustomer = (formData) => {
+        page.commands.showLoading();
+        $.ajax({
+            type: "POST",
+            contentType: false,
+            cache: false,
+            processData: false,
+            url: page.urls.createCustomer,
+            data: formData
+        })
+            .done((data) => {
+                customerAvatar = data;
+                customer = customerAvatar.customer;
+                locationRegion = customer.locationRegion;
+                let str = page.commands.renderCustomer(customerAvatar, customer, locationRegion);
+                page.elements.tbCustomerBody.prepend(str);
+                page.commands.removeHandleShowModal();
+                page.commands.handleShowGroupModal();
+                page.dialogs.elements.modalCreateCustomer.modal("hide");
+                App.IziToast.showSuccessAlertLeft("Thêm mới khách hàng <b>'" + customer.fullName + "'</b> thành công.");
+            })
+            .fail((jqXHR) => {
+                let errors = jqXHR.responseJSON;
+                if (errors) {
+                    let str = "";
+                    $.each(errors, (k, v) => {
+                        str += `
+                            <label class="error" for="${k + 'Cre'}">${v}</label>
+                        `;
+                    })
+                    page.dialogs.alertDanger.modalCreateCustomer.removeClass("hide").addClass("show");
+                    page.dialogs.alertDanger.modalCreateCustomer.css("display", "")
+                    page.dialogs.alertDanger.modalCreateCustomer.append(str);
+                }
+            }).always(function () {
+            page.commands.closeLoading();
+        });
+    }
+    //END CREATE//
+
+    page.commands.showLoading = () => {
+        page.elements.loader.removeClass("hide");
+        page.dialogs.elements.btnCreate.prop('disabled', true);
+        page.dialogs.elements.btnUpdate.prop('disabled', true);
+        page.dialogs.elements.btnDeposit.prop('disabled', true);
+        page.dialogs.elements.btnWithdraw.prop('disabled', true);
+        page.dialogs.elements.btnTransfer.prop('disabled', true);
+    }
+
+    page.commands.closeLoading = () => {
+        page.elements.loader.addClass("hide");
+        page.dialogs.elements.btnCreate.prop('disabled', false);
+        page.dialogs.elements.btnUpdate.prop('disabled', false);
+        page.dialogs.elements.btnDeposit.prop('disabled', false);
+        page.dialogs.elements.btnWithdraw.prop('disabled', false);
+        page.dialogs.elements.btnTransfer.prop('disabled', false);
+    }
+
+
+    // UPDATE CUSTOMER //
+    page.commands.handleShowUpdateModal = () => {
+        $(".update").on("click", function () {
+            let id = $(this).data("id");
+            let avatarFileFolder = $(this).data("avatar-file-folder");
+            let avatarFileName = $(this).data("avatar-file-name");
+            page.commands.getCustomerById(id).done((data) => {
+
+                let avatarUrl = App.BASE_URL_CLOUD_IMAGE + "/" + App.SCALE_IMAGE_W600_H650_Q100 + "/" + avatarFileFolder + "/" + avatarFileName;
+                page.dialogs.commands.loadImageToCanvasUp(null, "", avatarUrl);
+
+                customer = data;
+                locationRegion = customer.locationRegion;
+                page.dialogs.elements.customerIdUp.val(id);
+                page.dialogs.elements.fullNameUp.val(customer.fullName);
+                page.dialogs.elements.emailUp.val(customer.email);
+                page.dialogs.elements.phoneUp.val(customer.phone);
+
+                page.dialogs.elements.locationRegionIdUp.val(locationRegion.id);
+                page.dialogs.elements.provinceUp.val(customer.locationRegion.provinceId);
+                page.commands.getAllDistrictsByProvinceId(customer.locationRegion.provinceId).then(() => {
+                    page.dialogs.elements.districtUp.val(customer.locationRegion.districtId)
+                    page.commands.getAllWardsByDistrictId(customer.locationRegion.districtId).then(() => {
+                        page.dialogs.elements.wardUp.val(customer.locationRegion.wardId);
+                        page.dialogs.elements.addressUp.val(customer.locationRegion.address);
+                        page.dialogs.elements.modalUpdateCustomer.modal('show');
+                    })
+                })
+            })
+        })
+    }
+
+    page.dialogs.elements.btnUpdate.on("click", () => {
+        page.dialogs.elements.frmUpdateCustomer.submit();
+    })
+
+    page.dialogs.elements.frmUpdateCustomer.validate({
+        rules: {
+            fullNameUp: {
+                required: true,
+                minlength: 5,
+                maxlength: 50
+            },
+            emailUp: {
+                required: true,
+                minlength: 5,
+                maxlength: 50,
+                email: true
+            },
+            phoneUp: {
+                // phone_valid: true,
+                required: true,
+            }
+        },
+        messages: {
+            fullNameUp: {
+                required: "Vui lòng nhập tên đầy đủ",
+                minlength: "Độ dài tối thiểu là 5 ký tự",
+                maxlength: "Độ dài tối đa là 100 ký tự"
+            },
+            emailUp: {
+                required: "Vui lòng nhập email đầy đủ",
+                minlength: "Độ dài tối thiểu là 5 ký tự",
+                maxlength: "Độ dài tối đa là 100 ký tự",
+                email: "Định dạng email không đúng"
+            },
+            phoneUp: {
+                // phone_valid: "Định dạng số điện thoại không đúng",
+                required: "Vui lòng nhập số điện thoại đầy đủ"
+            }
+        },
+        errorLabelContainer: "#modalUpdateCustomer .modal-body .modal-alert-danger",
+        errorPlacement: function (error) {
+            error.appendTo("#modalUpdateCustomer .modal-body .modal-alert-danger");
+        },
+        showErrors: function () {
+            if (this.numberOfInvalids() > 0) {
+                page.dialogs.alertDanger.modalUpdateCustomer.removeClass("hide").addClass("show");
+            } else {
+                page.dialogs.alertDanger.modalUpdateCustomer.removeClass("show").addClass("hide").empty();
+                $("#modalUpdateCustomer input.error").removeClass("error");
+            }
+            this.defaultShowErrors();
+        },
+        submitHandler: function () {
+            customer.id = page.dialogs.elements.customerIdUp.val();
+            customer.fullName = page.dialogs.elements.fullNameUp.val();
+            customer.email = page.dialogs.elements.emailUp.val();
+            customer.phone = page.dialogs.elements.phoneUp.val();
+
+
+            locationRegion.id = page.dialogs.elements.locationRegionIdUp.val();
+            locationRegion.provinceId = page.dialogs.elements.provinceUp.val();
+            locationRegion.provinceName = page.dialogs.elements.provinceUp.find("option:selected").text();
+            locationRegion.districtId = page.dialogs.elements.districtUp.val();
+            locationRegion.districtName = page.dialogs.elements.districtUp.find("option:selected").text();
+            locationRegion.wardId = page.dialogs.elements.wardUp.val();
+            locationRegion.wardName = page.dialogs.elements.wardUp.find("option:selected").text();
+            locationRegion.address = page.dialogs.elements.addressUp.val();
+
+            let formData = new FormData();
+            formData.append("id", customer.id);
+            formData.append("fullName", customer.fullName);
+            formData.append("email", customer.email);
+            formData.append("phone", customer.phone);
+            formData.append("balance", customer.balance);
+
+            formData.append("locationId", locationRegion.id);
+            formData.append("provinceId", locationRegion.provinceId);
+            formData.append("provinceName", locationRegion.provinceName);
+            formData.append("districtId", locationRegion.districtId);
+            formData.append("districtName", locationRegion.districtName);
+            formData.append("wardId", locationRegion.wardId);
+            formData.append("wardName", locationRegion.wardName);
+            formData.append("address", locationRegion.address);
+
+            formData.append("file", page.dialogs.elements.imageFileUp[0].files[0]);
+            console.log("formData:", 1)
+            page.commands.doUpdateCustomer(formData);
+        }
+    })
+
+    page.commands.doUpdateCustomer = (formData) => {
+        page.commands.showLoading();
+        $.ajax({
+            type: "PATCH",
+            contentType: false,
+            cache: false,
+            processData: false,
+            url: page.urls.updateCustomer + "/" + customer.id,
+            data: formData
+        })
+            .done((data) => {
+                customerAvatar = data;
+                customer = customerAvatar.customer;
+                locationRegion = customer.locationRegion;
+                let str = page.commands.renderCustomer(customerAvatar, customer, locationRegion);
+                let updateRow = $("#tr_" + customer.id);
+                updateRow.replaceWith(str);
+
+                page.commands.enableTooltip();
+                page.commands.removeHandleShowModal();
+                page.commands.handleShowGroupModal();
+                page.dialogs.elements.modalUpdateCustomer.modal("hide");
+
+                App.IziToast.showSuccessAlertLeft("Chỉnh sửa khách hàng <b>'" + customer.fullName + "'</b> thành công.")
+            }).fail((jqXHR) => {
+            let str = ``;
+            console.log(jqXHR.status);
+            if (jqXHR.status === 401) {
+                App.SweetAlert.showError401();
+            } else {
+                if (jqXHR.status === 403) {
+
+                    App.SweetAlert.showError403();
+                } else {
+                    if (jqXHR.responseJSON) {
+                        if (jqXHR.responseJSON.message) {
+                            str += `<label id="message-error" class="error" for="message">${jqXHR.responseJSON.message}</label>`;
+                        } else {
+                            $.each(jqXHR.responseJSON, function (key, value) {
+                                str += `<label id="${key}Up-error" class="error" for="${key}Up">${value}</label>`;
+                                $("#" + key + "Up").addClass("error");
+                            });
+                            page.dialogs.alertDanger.modalUpdateCustomer.removeClass("hide").addClass("show");
+                            page.dialogs.alertDanger.modalUpdateCustomer.css("display", "block")
+                            page.dialogs.alertDanger.modalUpdateCustomer.append(str);
+                        }
+                    } else {
+                        App.SweetAlert.showError500();
+                    }
+                }
+            }
+        }).always(function () {
+            page.commands.closeLoading();
+        })
+    }
+    //END UPDATE//
+
+    //--- DELETE CUSTOMER ---//
+    page.commands.handleShowConfirmDelete = () => {
+        $(".delete").on("click", function () {
+            let id = $(this).data("id");
+            page.commands.getCustomerById(id).then(() => {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        page.commands.doDeleteCustomer(id)
+                    }
+                })
+            })
+        });
+    }
+
+    page.commands.doDeleteCustomer = (customerId) => {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "DELETE",
+            url: page.urls.deleteCustomer + "/" + customerId,
+            data: JSON.stringify(customer)
+        })
+            .done(() => {
+                $("#tr_" + customerId).remove();
+                App.IziToast.showSuccessAlertLeft("Xóa khách hàng <b>'" + customer.fullName + "'</b> thành công");
+            })
+            .fail((jqXHR) => {
+                console.log("jq: ", jqXHR)
+                if (jqXHR.status === 401) {
+                    App.SweetAlert.showError401();
+                } else {
+                    if (jqXHR.status === 403) {
+                        App.SweetAlert.showError403();
+                    } else {
+                            App.SweetAlert.showErrorAlert(jqXHR.responseJSON.message);
+                        // App.SweetAlert.showErrorAlert(jqXHR.responseJSON);
+                    }
+                }
+            })
+    }
+    //--- END DELETE ---//
+
+    //--- DEPOSIT ---//
+    page.commands.handleShowDepositModal = () => {
+        $(".deposit").on("click", function () {
+            let id = $(this).data("id");
+            page.commands.getCustomerById(id).then((data) => {
+                page.dialogs.elements.customerIdDeposit.val(id);
+                page.dialogs.elements.fullNameDeposit.val(data.fullName);
+                page.dialogs.elements.balanceDeposit.val(data.balance);
+                page.dialogs.elements.transactionAmountDeposit.val(0);
+                page.dialogs.elements.modalDeposit.modal("show");
+            })
+        })
+    }
+
+    page.dialogs.elements.btnDeposit.on("click", () => {
+        page.dialogs.elements.frmDeposit.submit();
+    })
+
+    page.dialogs.elements.frmDeposit.validate({
+        rules: {
+            transactionAmountDeposit: {
+                required: true,
+                number: true,
+                min: 100000,
+                max: 10000000000
+            }
+        },
+        messages: {
+            transactionAmountDeposit: {
+                required: "Vui lòng nhập số tiền.",
+                number: "Số tiền phải là số.",
+                min: "Giá trị nhỏ nhất là 100.000 VNĐ.",
+                max: "Giá trị lớn nhất là 1.000.000.000 VNĐ."
+            }
+        },
+        errorLabelContainer: "#modalDeposit .modal-body .modal-alert-danger",
+        errorPlacement: function (error) {
+            error.appendTo("#modalDeposit .modal-body .modal-alert-danger");
+        },
+        showErrors: function () {
+            if (this.numberOfInvalids() > 0) {
+                page.dialogs.alertDanger.modalDeposit.removeClass("hide").addClass("show");
+            } else {
+                page.dialogs.alertDanger.modalDeposit.removeClass("show").addClass("hide").empty();
+                $("#modalDeposit input.error").removeClass("error");
+            }
+            this.defaultShowErrors();
+        },
+        submitHandler: function () {
+            let id = page.dialogs.elements.customerIdDeposit.val();
+            page.commands.getCustomerById(id).then((data) => {
+                deposit.id = 0;
+                deposit.customerId = data.id;
+                deposit.transactionAmount = page.dialogs.elements.transactionAmountDeposit.val();
+                page.commands.doDeposit(deposit);
+            })
+        }
+    })
+
+    page.commands.doDeposit = (obj) => {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "POST",
+            url: page.urls.deposit,
+            data: JSON.stringify(obj)
+        })
+            .done((data) => {
+                customerAvatar = data;
+                customer = customerAvatar.customer;
+                locationRegion = customer.locationRegion;
+                let str = page.commands.renderCustomer(customerAvatar, customer, locationRegion);
+                let updateRow = $("#tr_" + customer.id);
+                updateRow.replaceWith(str);
+
+                page.commands.enableTooltip();
+
+                page.commands.removeHandleShowModal();
+
+                page.commands.handleShowGroupModal();
+
+                page.dialogs.elements.modalDeposit.modal("hide");
+                App.IziToast.showSuccessAlertLeft("Nạp <b>'" + obj.transactionAmount + "'</b> VNĐ cho khách hàng <b>'" + customer.fullName + "'</b> thành công");
+
+            })
+            .fail((jqXHR) => {
+                let errors = jqXHR.responseJSON;
+                if (errors) {
+                    let str = "";
+                    $.each(errors, (k, v) => {
+                        str += `
+                            <label class="error" for="${k + 'Deposit'}">${v}</label>
+                        `;
+                    })
+                    page.dialogs.alertDanger.modalDeposit.removeClass("hide").addClass("show");
+                    page.dialogs.alertDanger.modalDeposit.css("display", "");
+                    page.dialogs.alertDanger.modalDeposit.append(str);
+                }
+            })
+    }
+    //--- END DEPOSIT ---//
+
+    //---- WITHDRAW ---//
+    page.commands.handleShowWithdrawModal = () => {
+        $(".withdraw").on("click", function () {
+            let id = $(this).data("id");
+            page.commands.getCustomerById(id).then((data) => {
+                page.dialogs.elements.customerIdWithdraw.val(id);
+                page.dialogs.elements.fullNameWithdraw.val(data.fullName);
+                page.dialogs.elements.balanceWithdraw.val(data.balance);
+                page.dialogs.elements.transactionAmountWithdraw.val(0);
+                page.dialogs.elements.modalWithdraw.modal("show");
+            })
+        })
+    }
+
+    page.dialogs.elements.btnWithdraw.on("click", () => {
+        page.dialogs.elements.frmWithdraw.submit();
+    })
+
+    page.dialogs.elements.frmWithdraw.validate({
+        rules: {
+            transactionAmountWithdraw: {
+                required: true,
+                number: true,
+                min: 100000,
+                max: 10000000000
+            }
+        },
+        messages: {
+            transactionAmountWithdraw: {
+                required: "Vui lòng nhập số tiền",
+                number: "Số tiền phải là số",
+                min: "Giá trị nhỏ nhất là 100.000 VNĐ",
+                max: "Giá trị lớn nhất là 1.000.000.000 VNĐ"
+            }
+        },
+        errorLabelContainer: "#modalWithdraw .modal-body .modal-alert-danger",
+        errorPlacement: function (error) {
+            error.appendTo("#modalWithdraw .modal-body .modal-alert-danger");
+        },
+        showErrors: function () {
+            if (this.numberOfInvalids() > 0) {
+                page.dialogs.alertDanger.modalWithdraw.removeClass("hide").addClass("show");
+            } else {
+                page.dialogs.alertDanger.modalWithdraw.removeClass("show").addClass("hide").empty();
+                $("#modalWithdraw input.error").removeClass("error");
+            }
+            this.defaultShowErrors();
+        },
+        submitHandler: function () {
+            customer.id = page.dialogs.elements.customerIdWithdraw.val();
+            page.commands.getCustomerById(customer.id).then((data) => {
+                withdraw.id = 0;
+                withdraw.customerId = data.id;
+                withdraw.transactionAmount = page.dialogs.elements.transactionAmountWithdraw.val();
+                if (+withdraw.transactionAmount > +data.balance) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Số tiền muốn rút nhiều hơn số tiền hiện có',
+                    })
+                } else {
+                    page.commands.doWithdraw(withdraw);
+                }
+            })
+        }
+    })
+
+    page.commands.doWithdraw = (obj) => {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "POST",
+            url: page.urls.withdraw,
+            data: JSON.stringify(obj)
+        })
+            .done((data) => {
+                customerAvatar = data;
+                customer = customerAvatar.customer;
+                locationRegion = customer.locationRegion;
+                let str = page.commands.renderCustomer(customerAvatar, customer, locationRegion);
+                let updateRow = $("#tr_" + customer.id);
+                updateRow.replaceWith(str);
+
+                page.commands.enableTooltip();
+
+                page.commands.removeHandleShowModal();
+
+                page.commands.handleShowGroupModal();
+
+                page.dialogs.elements.modalWithdraw.modal("hide");
+
+                App.IziToast.showSuccessAlertLeft("Rút <b>'" + obj.transactionAmount + "'</b> VNĐ của khách hàng <b>'" + customer.fullName + "'</b> thành công");
+            })
+            .fail((jqXHR) => {
+                let errors = jqXHR.responseJSON;
+                if (errors) {
+                    let str = "";
+                    $.each(errors, (k, v) => {
+                        str += `
+                            <label for="${k + 'Withdraw'}">${v}</label>
+                        `;
+                    })
+                    page.dialogs.alertDanger.modalWithdraw.removeClass("hide").addClass("show");
+                    page.dialogs.alertDanger.modalWithdraw.css("display", "block")
+                    page.dialogs.alertDanger.modalWithdraw.append(str);
+                }
+            })
+    }
+    //--- END WITHDRAW ---//
+
+    //--- TRANSFER ---//
+    page.commands.handleShowTransferModal = () => {
+        $(".transfer").on("click", function () {
+            let id = $(this).data("id");
+            page.commands.getCustomerById(id).then((data) => {
+                customer = data;
+                page.dialogs.elements.senderIdTransfer.val(id);
+                page.dialogs.elements.senderNameTransfer.val(customer.fullName);
+                page.dialogs.elements.senderEmailTransfer.val(customer.email);
+                page.dialogs.elements.senderBalanceTransfer.val(customer.balance);
+                page.commands.getAllRecipients(id);
+                page.dialogs.elements.modalTransfer.modal("show");
+            })
+        })
+    }
+
+    page.dialogs.elements.btnTransfer.on("click", () => {
+        page.dialogs.elements.frmTransfer.submit();
+    })
+
+    page.dialogs.elements.frmTransfer.validate({
+        rules: {
+            transferAmountTransfer: {
+                required: true,
+                number: true,
+                min: 100000,
+                max: 1000000000
+            }
+        },
+        messages: {
+            transferAmountTransfer: {
+                required: '<label for="transferAmountTransfer">Vui lòng nhập số tiền</label>',
+                number: '<label for="transferAmountTransfer">Số tiền muốn chuyển phải là số</label>',
+                min: '<label for="transferAmountTransfer">Giá trị nhỏ nhất là 100.000 VNĐ</label>',
+                max: '<label for="transferAmountTransfer">Giá trị lớn nhất là 1.000.000.000 VNĐ</label>',
+            }
+        },
+        errorLabelContainer: "#modalTransfer .modal-body .modal-alert-danger",
+        errorPlacement: function (error) {
+            error.appendTo("#modalTransfer .modal-body .modal-alert-danger");
+        },
+        showErrors: function () {
+            if (this.numberOfInvalids() > 0) {
+                page.dialogs.alertDanger.modalTransfer.removeClass("hide").addClass("show");
+            } else {
+                page.dialogs.alertDanger.modalTransfer.removeClass("show").addClass("hide").empty();
+                $("#modalTransfer input.error").removeClass("error");
+            }
+            this.defaultShowErrors();
+        },
+        submitHandler: () => {
+            let senderId = page.dialogs.elements.senderIdTransfer.val();
+            let recipientId = page.dialogs.elements.recipientIdTransfer.val();
+            let transferAmount = page.dialogs.elements.transferAmountTransfer.val();
+            if (isNaN(transferAmount)) {
+                page.dialogs.alertDanger.modalTransfer.removeClass("hide").addClass("show");
+                page.dialogs.alertDanger.modalTransfer.css("display", "block")
+                page.dialogs.alertDanger.modalTransfer.append("<label class='error'>Số tiền muốn chuyển phải là số</label>");
+            } else {
+                let fees = 10;
+                let feesAmount = (+transferAmount * +fees) / 100;
+                let transactionAmount = +transferAmount + feesAmount;
+                let sender = new Customer();
+                let recipient = new Customer();
+                if (senderId === recipientId) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Người gửi và người nhận không thể trùng nhau',
+                    })
+                } else {
+                    page.commands.getCustomerById(senderId).then((data) => {
+                        sender = data;
+                        transfer.senderId = senderId;
+                        page.commands.getCustomerById(recipientId).then((data) => {
+                            recipient = data;
+                            transfer.recipientId = recipientId;
+                            transfer.transferAmount = transferAmount;
+                            transfer.fees = fees;
+                            transfer.feesAmount = feesAmount;
+                            transfer.transactionAmount = transactionAmount;
+                            if (transactionAmount < sender.balance) {
+                                doTransfer(transfer, sender, recipient);
+                            } else {
+                                page.dialogs.alertDanger.modalTransfer.removeClass("hide").addClass("show");
+                                page.dialogs.alertDanger.modalTransfer.css("display", "block")
+                                page.dialogs.alertDanger.modalTransfer.append("<label class='error'>Số tiền muốn chuyển lớn hơn số tiền có trong tài khoản</label>");
+                            }
+                        })
+                            .catch(() => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Oops...',
+                                    text: 'ID người nhận không hợp lệ',
+                                })
+                            });
+                    })
+                        .catch(() => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: 'ID người gửi không hợp lệ',
+                            })
+                        });
+                }
+            }
+        }
+    })
+
+    function doTransfer(transferInput, sender, recipient) {
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "POST",
+            url: page.urls.transfer,
+            data: JSON.stringify(transferInput)
+        })
+            .done((data) => {
+                senderAvatar = data.senderAvatar;
+                sender = senderAvatar.customer;
+                let strSender = page.commands.renderCustomer(senderAvatar, sender, sender.locationRegion);
+                let senderCurrentRow = $("#tr_" + sender.id);
+                senderCurrentRow.replaceWith(strSender);
+
+                recipientAvatar = data.recipientAvatar;
+                recipient = recipientAvatar.customer;
+                let strRecipient = page.commands.renderCustomer(recipientAvatar, recipient, recipient.locationRegion);
+                let recipientCurrentRow = $("#tr_" + recipient.id);
+                recipientCurrentRow.replaceWith(strRecipient);
+
+                page.dialogs.elements.senderBalanceTransfer.val(sender.balance);
+
+                page.commands.enableTooltip();
+
+                page.commands.removeHandleShowModal();
+
+                page.commands.handleShowGroupModal();
+
+                page.dialogs.alertDanger.modalTransfer.modal("hide");
+
+                App.IziToast.showSuccessAlertLeft("Chuyển <b>'" + transferInput.transferAmount + "'</b> VNĐ từ khách hàng <b>'" + sender.fullName + "'</b> đến khách hàng <b>'" + recipient.fullName + "'</b> thành công!");
+            })
+            .fail((jqXHR) => {
+                let errors = jqXHR.responseJSON;
+                if (errors) {
+                    let str = "";
+                    $.each(errors, (k, v) => {
+                        str += `
+                            <label for="${k + 'Transfer'}">${v}</label>
+                        `;
+                    })
+                    page.dialogs.alertDanger.modalTransfer.removeClass("hide").addClass("show");
+                    page.dialogs.alertDanger.modalTransfer.css("display", "block")
+                    page.dialogs.alertDanger.modalTransfer.append(str);
+                }
+            })
+    }
+
+    page.commands.getAllRecipients = (senderId) => {
+        page.dialogs.elements.recipientIdTransfer.empty();
+        $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "GET",
+            url: page.urls.getAllRecipients + "/" + senderId
+        })
+            .done((data) => {
+                data.map(item => {
+                    let str = `<option value = "${item.id}">(${item.id}) - ${item.fullName}</option> `;
+                    page.dialogs.elements.recipientIdTransfer.append(str);
+                })
+            })
+            .fail((error) => {
+                console.log(error)
+            })
+    }
+
+    page.dialogs.elements.transferAmountTransfer.on("input", function () {
+        let transferAmount = +$(this).val();
+        let fees = 10;
+        let feesAmount = transferAmount * fees / 100;
+        let transactionAmount = transferAmount + feesAmount;
+
+        page.dialogs.elements.transactionAmountTransfer.val(transactionAmount);
+    })
+    //--- END TRANSFER ---//
+
+    //--- UPDATE BALANCE ---//
+    page.commands.updateCustomer = (obj) => {
+        return $.ajax({
+            headers: {
+                "accept": "application/json",
+                "content-type": "application/json"
+            },
+            type: "PATCH",
+            url: page.urls.updateCustomer + "/" + obj.id,
+            data: JSON.stringify(obj)
+        })
+            .done((data) => {
+            })
+            .fail((error) => {
+                console.log(error);
+            })
+    }
+    //--- END UPDATE BALANCE ---//
+
+    //---GET CUSTOMER AVATAR BY CUSTOMER ID--//
+    page.commands.getCustomerAvatarByCustomerId = (customerId) => {
+        return $.ajax({
+            type: "GET",
+            url: page.urls.getCustomerAvatarById + "/" + customerId
+        }).done((data) => {
+            customerAvatar = data;
+            console.log(customerAvatar);
+        })
+            .fail((jqXHR) => {
+                let errors = jqXHR.responseJSON;
+                let strError = "";
+                if (errors) {
+                    $.each(errors, (k, v) => {
+                        strError += `${v}`;
+                    })
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: strError,
+                })
+            })
+    }
+    //--END--//
+
+    //--- FIND BY ID ---//
+    page.commands.getCustomerById = (customerId) => {
+        return $.ajax({
+            type: "GET",
+            url: page.urls.getCustomerById + "/" + customerId
+        }).done((data) => {
+            customer = data;
+        })
+            .fail((jqXHR) => {
+                let errors = jqXHR.responseJSON;
+                let strError = "";
+                if (errors) {
+                    $.each(errors, (k, v) => {
+                        strError += `${v}`;
+                    })
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: strError,
+                })
+            })
+    }
+    //--- END FIND BY ID ---//
+
+    //--- SHOW GROUP MODAL ---//
+    page.commands.handleShowGroupModal = () => {
+        page.commands.handleShowCreateModal();
+
+        page.commands.handleShowUpdateModal();
+
+        page.commands.handleShowConfirmDelete();
+
+        page.commands.handleShowDepositModal();
+
+        page.commands.handleShowWithdrawModal();
+
+        page.commands.handleShowTransferModal();
+    }
+    //--- END SHOW GROUP MODAL ---//
+
+    //--- REMOVE SHOW MODAL ---//
+    page.commands.removeHandleShowModal = () => {
+        page.elements.btnShowCreateModal.off("click");
+        $(".edit").off("click");
+        $(".delete").off("click");
+        $(".deposit").off("click");
+        $(".withdraw").off("click");
+        $(".transfer").off("click");
+    }
+    //--- END REMOVE SHOW MODAL ---//
+
+    page.dialogs.commands.handleCloseCreateModal = () => {
+        page.dialogs.alertDanger.modalCreateCustomer = $("#modalCreateCustomer .modal-body .modal-alert-danger");
+        page.dialogs.elements.frmCreateCustomer.find("input.error").removeClass("error");
+        page.dialogs.elements.frmCreateCustomer[0].reset();
+        page.dialogs.elements.frmCreateCustomer.validate().resetForm();
+        page.dialogs.elements.clearImagePreviewCre();
+    }
+
+    page.dialogs.commands.handleCloseUpdateModal = () => {
+        page.dialogs.alertDanger.modalUpdateCustomer = $("#modalUpdateCustomer .modal-body .modal-alert-danger");
+        page.dialogs.elements.frmUpdateCustomer.find("input.error").removeClass("error");
+        page.dialogs.elements.frmUpdateCustomer[0].reset();
+        page.dialogs.elements.frmUpdateCustomer.validate().resetForm();
+        page.dialogs.elements.clearImagePreviewUp();
+    }
+
+    page.dialogs.commands.handleCloseDepositModal = () => {
+        page.dialogs.alertDanger.modalDeposit = $("#modalDeposit .modal-body .modal-alert-danger");
+        page.dialogs.elements.frmDeposit.find("input.error").removeClass("error");
+        page.dialogs.elements.frmDeposit[0].reset();
+        page.dialogs.elements.frmDeposit.validate().resetForm();
+    }
+
+    page.dialogs.commands.handleCloseWithdrawModal = () => {
+        page.dialogs.alertDanger.modalWithdraw = $("#modalWithdraw .modal-body .modal-alert-danger");
+        page.dialogs.elements.frmWithdraw.find("input.error").removeClass("error");
+        page.dialogs.elements.frmWithdraw[0].reset();
+        page.dialogs.elements.frmWithdraw.validate().resetForm();
+    }
+
+    page.dialogs.commands.handleCloseTransferModal = () => {
+        page.dialogs.alertDanger.modalTransfer = $("#modalTransfer .modal-body .modal-alert-danger");
+        page.dialogs.elements.frmTransfer.find("input.error").removeClass("error");
+        page.dialogs.elements.frmTransfer[0].reset();
+        page.dialogs.elements.frmTransfer.validate().resetForm();
+    }
+
+    page.commands.enableTooltip = () => {
+        let icons = document.querySelectorAll('[data-toggle="tooltip"]');
+        icons.forEach((icon) => {
+            new bootstrap.Tooltip(icon);
+        })
+    }
+
+    page.commands.loadData = () => {
+        page.commands.getAllCustomers();
+
+        page.commands.getAllProvinces().then(() => {
+            let provinceId = page.dialogs.elements.provinceCre.val();
+
+            page.commands.getAllDistrictsByProvinceId(provinceId).then(() => {
+                let districtId = page.dialogs.elements.districtCre.val();
+
+                page.commands.getAllWardsByDistrictId(districtId);
+            });
+        })
+
+    }
+
+    page.initializeEventControl = () => {
+        page.commands.handleShowGroupModal();
+
+        page.dialogs.elements.modalCreateCustomer.on("hidden.bs.modal", function () {
+            page.dialogs.commands.handleCloseCreateModal();
+        });
+
+        page.dialogs.elements.modalUpdateCustomer.on("hidden.bs.modal", function () {
+            page.dialogs.commands.handleCloseUpdateModal();
+        });
+
+        page.dialogs.elements.modalDeposit.on("hidden.bs.modal", function () {
+            page.dialogs.commands.handleCloseDepositModal();
+        });
+
+        page.dialogs.elements.modalWithdraw.on("hidden.bs.modal", function () {
+            page.dialogs.commands.handleCloseWithdrawModal();
+        });
+
+        page.dialogs.elements.modalTransfer.on("hidden.bs.modal", function () {
+            page.dialogs.commands.handleCloseTransferModal();
+        });
+
+        page.dialogs.elements.divImagePreviewCre.on("click", function () {
+            page.dialogs.elements.imageFileCre.trigger("click");
+        });
+
+        page.dialogs.elements.imageFileCre.on("change", function () {
+            page.dialogs.commands.changeImagePreviewCre();
+        });
+
+        page.dialogs.elements.divImagePreviewUp.on("click", function () {
+            page.dialogs.elements.imageFileUp.trigger("click");
+        });
+
+        page.dialogs.elements.imageFileUp.on("change", function () {
+            page.dialogs.commands.changeImagePreviewUp();
+        });
+    }
+
+    $(() => {
+        page.commands.loadData();
+        page.initializeEventControl();
+    });
+</script>
+</html>

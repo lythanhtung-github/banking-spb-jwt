@@ -1,0 +1,19 @@
+{
+  "properties": [
+    {
+      "name": "application.uploader.cloud-name",
+      "type": "java.lang.String",
+      "description": "Description for application.uploader.cloud-name."
+    },
+    {
+      "name": "application.uploader.api-key",
+      "type": "java.lang.String",
+      "description": "Description for application.uploader.api-key."
+    },
+    {
+      "name": "application.uploader.api-secret",
+      "type": "java.lang.String",
+      "description": "Description for application.uploader.api-secret."
+    }
+  ]
+}

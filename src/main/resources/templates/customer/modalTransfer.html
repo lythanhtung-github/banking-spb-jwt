@@ -1,0 +1,64 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<th:block th:fragment="modalTransfer">
+    <div class="modal fade" id="modalTransfer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+         aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Transfer</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-alert-danger hide"></div>
+                    <form id="frmTransfer">
+                        <div class="row">
+                            <div class="col-lg-3 mt-3">
+                                <label for="senderIdTransfer">Sender ID</label>
+                                <input type="text" class="form-control" id="senderIdTransfer">
+                            </div>
+                            <div class="col-lg-3 mt-3">
+                                <label for="senderNameTransfer">Sender Name</label>
+                                <input type="text" class="form-control" id="senderNameTransfer" readonly>
+                            </div>
+                            <div class="col-lg-3 mt-3">
+                                <label for="senderEmailTransfer">Email</label>
+                                <input type="text" class="form-control" id="senderEmailTransfer" readonly>
+                            </div>
+                            <div class="col-lg-3 mt-3">
+                                <label for="senderBalanceTransfer">Sender balance (VNĐ)</label>
+                                <input type="text" class="form-control" id="senderBalanceTransfer" readonly>
+                            </div>
+                            <div class="col-lg-3 mt-3">
+                                <label>Recipient Name</label>
+                                <select class="form-select" id="recipientIdTransfer"
+                                        name="recipientIdTransfer">
+                                </select>
+                            </div>
+                            <div class="col-lg-3 mt-3">
+                                <label for="transferAmountTransfer">Transfer Amount</label>
+                                <input type="text" class="form-control" id="transferAmountTransfer"
+                                       name="transferAmountTransfer" value="0">
+                            </div>
+                            <div class="col-lg-3 mt-3">
+                                <label for="feesTransfer">Fees (VNĐ)</label>
+                                <input type="number" class="form-control" id="feesTransfer" value="10">
+                            </div>
+                            <div class="col-lg-3 mt-3">
+                                <label for="transactionAmountTransfer">Total amount of transaction (VNĐ)</label>
+                                <input type="number" class="form-control" id="transactionAmountTransfer" readonly>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-outline-primary" id="btnTransfer">
+                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                        Transfer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>

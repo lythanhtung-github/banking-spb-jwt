@@ -1,0 +1,136 @@
+header {
+    background-color: #0a8aca;
+    color: #fff;
+    padding: 15px;
+}
+
+header .btn {
+    float: right;
+    min-width: 50px;
+    outline: none !important;
+    margin-top: 10px;
+    margin-left: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    border: 1px solid #fff;
+}
+
+table {
+    border: 1px solid black;
+}
+
+thead {
+    background-color: #012d4d;
+    color: white;
+}
+
+tfoot {
+    font-weight: bold;
+    padding-top: 5px;
+    border-top: 2px solid black;
+}
+
+.modal-alert-danger {
+    padding: 10px 35px;
+    margin-bottom: 15px;
+    color: #842029;
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+.modal-alert-danger label {
+    display: list-item;
+}
+
+.hide {
+    display: none;
+}
+
+.show {
+    display: block;
+}
+
+#modalCreateCustomer .modal-header {
+    background-color: #0aca67;
+    color: white;
+}
+
+#modalUpdateCustomer .modal-header {
+    background-color: #0a7dca;
+    color: white;
+}
+
+#modalDeposit .modal-header {
+    background-color: #049157;
+    color: white;
+}
+
+#modalWithdraw .modal-header {
+    background-color: #cdc71c;
+    color: white;
+}
+
+#modalTransfer .modal-header {
+    background-color: #055ea2;
+    color: white;
+}
+
+.modal-alert-danger {
+    padding: 10px 35px;
+    margin-bottom: 15px;
+    color: #842029;
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+input:read-only {
+    background-color: #b0b5be;
+}
+
+input:read-only:focus {
+    background-color: #b0b5be;
+}
+
+table td span.selected {
+    border-left-color: #5cb85c;
+}
+
+table td span.unselected {
+    border-left-color: #dfdfdf;
+}
+
+#user-image{
+    width: 20px;
+}
+
+.dropdown-item:hover, .dropdown-item:focus {
+    color: #ffffff;
+    background-color: #4caf50;
+}
+
+/*Start Loader*/
+.loader {
+    position: absolute;
+    z-index: 1070;
+    top: 50%;
+    left: 50%;
+    border: 10px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 10px solid #3498db;
+    width: 50px;
+    height: 50px;
+    -webkit-animation: spin 1s linear infinite; /* Safari */
+    animation: spin 1s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+/*End Loader*/
